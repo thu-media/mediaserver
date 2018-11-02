@@ -79,7 +79,7 @@ def index(request):
         else:
             tr += [''] * 9
             tr.append(status)
-        tr.append(client.manager)
+        # tr.append(client.manager)
         tr.append(client.info)
         table.append({'client': client, 'tr': tr})
     for client in clients_no_report:
