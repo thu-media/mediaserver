@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ('ip', models.CharField(db_index=True, default=None, max_length=64)),
                 ('version', models.CharField(db_index=True, default=None, max_length=64)),
                 ('report', models.TextField(default=None)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('client', models.ForeignKey(default=None, on_delete=django.db.models.deletion.CASCADE, to='serverlist.Client')),
             ],
@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
                 ('target', models.CharField(db_index=True, default=None, max_length=64)),
                 ('param', models.CharField(blank=True, default='', max_length=64)),
                 ('info', models.TextField(blank=True, default='')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
             ],
         ),
     ]

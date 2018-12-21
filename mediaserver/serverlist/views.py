@@ -8,16 +8,19 @@ import requests
 import time
 import uuid
 
+from datetime import datetime, timedelta
 from .models import AccessLog, Client, ClientReport, UnknownReport
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import models, transaction
 from django.http import Http404, HttpResponseBadRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from six.moves import urllib
 
@@ -40,35 +43,44 @@ def index(request):
         client = client_report.client
         report = json.loads(client_report.report)
         status = 'ok'
-        if client_report.version != '0.1.0':
-            status = '监测脚本过旧'
+        if client_report.version != '0.1.1':
+            status = '监测脚本不匹配'
         tr = []
         tr.append(client.display_name or client.client_id)
         tr.append(report['platform'])
+        # ips = [client_report.ip]
+        # if settings.ROUTE53_DOMAIN_NAME:
+        #     ips.append(client.client_id.lower() + '.' + settings.ROUTE53_DOMAIN_NAME)
         tr.append(client_report.ip)
         if status == 'ok':
             tr.append([
-                '{:d} 核 (使用率 {:.0f}%)'.format(report['cpu_count'], report['cpu_percent'], 0),
+                '{:d} 核 (使用率 {:.0f}%)'.format(report['cpu_count'], report['cpu_percent']),
                 '最高主频 {:.1f}GHz'.format(report['cpu_freq'][2] / 1000),
             ])
             tr.append('N/A' if report['loadavg'] is None else '{:.1f}'.format(report['loadavg'][0]))
-            tr.append('{:.1f}G ({:.0f}%)'.format(report['virtual_memory'][0] / 1024 ** 3, report['virtual_memory'][2], 0))
-            tr.append(['{:.0f}G ({:.0f}%)'.format(disk[0] / 1024**3, disk[3]) for disk in report['disk_usage'] if disk[0] / 1024**3 > 9])
+            tr.append('{:.1f}G ({:.0f}%)'.format(report['virtual_memory'][0] / 1024 ** 3, report['virtual_memory'][2]))
+            disks = list(zip(report['disk_partitions'], report['disk_usage']))
+            disks.sort(key=lambda a: (a[0][0], -a[1][0]))
+            disks = [usage for i, (partition, usage) in enumerate(disks) if partition[0] not in set(p[0] for p, _ in disks[:i])]
+            tr.append(['{:.0f}G ({:.0f}%)'.format(disk[0] / 1024**3, disk[3]) for disk in disks if disk[0] / 1024**3 > 9])
             if report['nvml_version']:
                 tr.append([dev['nvmlDeviceGetName'] for dev in report['nvmlDevices']])
                 tr.append(['{:.1f}G ({:.0f}%)'.format(
-                    dev['nvmlDeviceGetMemoryInfo']['total'] / 1024**3,
-                    dev['nvmlDeviceGetMemoryInfo']['used'] / dev['nvmlDeviceGetMemoryInfo']['total'] * 100,
+                        dev['nvmlDeviceGetMemoryInfo']['total'] / 1024**3,
+                        dev['nvmlDeviceGetMemoryInfo']['used'] / dev['nvmlDeviceGetMemoryInfo']['total'] * 100,
                     ) for dev in report['nvmlDevices']])
-                tr.append(['{:d}% ({:.0f}W/{:.0f}W)'.format(
-                    dev['nvmlDeviceGetUtilizationRates']['gpu'],
-                    dev['nvmlDeviceGetPowerUsage'] / 1000,
-                    dev['nvmlDeviceGetPowerManagementLimit'] / 1000,
+                tr.append(['{:s}% ({:.0f}W/{:.0f}W) {:d}℃'.format(
+                        '-' if dev['nvmlDeviceGetUtilizationRates']['gpu'] is None else '{:d}'.format(dev['nvmlDeviceGetUtilizationRates']['gpu']),
+                        dev['nvmlDeviceGetPowerUsage'] / 1000,
+                        dev['nvmlDeviceGetPowerManagementLimit'] / 1000,
+                        dev['nvmlDeviceGetTemperature'],
+                        # dev['nvmlDeviceGetTemperatureThreshold']['slowdown'],
                     ) for dev in report['nvmlDevices']])
             else:
-                tr.append('NVML failed')
-                tr.append('N/A')
-                tr.append('N/A')
+                # tr.append('NVML failed')
+                # tr.append('N/A')
+                # tr.append('N/A')
+                tr.extend(['N/A'] * 3)
             users = [user[0] for user in report['users']]
             users = sorted(list(set(users)))
             if len(users) > 3:
@@ -87,9 +99,8 @@ def index(request):
         tr.append(client.client_id)
         tr.append('N/A')
         tr.append('N/A')
-        tr += [''] * 9
-        tr += ['未配置']
-        tr.append(client.manager)
+        tr.extend([''] * 9)
+        tr.append('未配置')
         tr.append(client.info)
         table.append({'client': client, 'tr': tr})
     AccessLog.objects.create(ip=get_ip(request), target='serverlist:index')
@@ -97,9 +108,32 @@ def index(request):
 
 def client(request, pk):
     client = get_object_or_404(Client.objects, pk=pk)
-    client_reports = ClientReport.objects.filter(client=client).order_by('-created_at')
+    client_reports = ClientReport.objects.filter(client=client).order_by('-id')
+    paginator = Paginator(client_reports, 100)
+    client_reports = paginator.get_page(request.GET.get('page'))
     AccessLog.objects.create(ip=get_ip(request), target='serverlist:client', param=pk)
     return render(request, 'serverlist/client.html', {'client': client, 'client_reports': client_reports})
+
+def clientchart(request, pk):
+    client = get_object_or_404(Client.objects, pk=pk)
+    client_reports = ClientReport.objects.filter(client=client).filter(created_at__gt=datetime.now() - timedelta(days=7)).order_by('-created_at')
+    data = []
+    for report in client_reports:
+        day = (report.created_at.timestamp() - timezone.now().timestamp()) / 86400.
+        report = json.loads(report.report)
+        data.append({
+            'day': day,
+            'cpu': report['cpu_percent'],
+            'virtual_memory': report['virtual_memory'][2],
+            'gpu': [{
+                'name': dev['nvmlDeviceGetName'],
+                'util': dev['nvmlDeviceGetUtilizationRates']['gpu'],
+                'memory': dev['nvmlDeviceGetMemoryInfo']['used'] / dev['nvmlDeviceGetMemoryInfo']['total'] * 100,
+                'temperature': dev.get('nvmlDeviceGetTemperature', None),
+            } for dev in report.get('nvmlDevices', [])],
+        })
+    AccessLog.objects.create(ip=get_ip(request), target='serverlist:clientchart', param=pk)
+    return render(request, 'serverlist/clientchart.html', {'client': client, 'data': json.dumps(data)})
 
 def clientreport(request, client_id, report_id):
     client_report = get_object_or_404(ClientReport.objects.select_related('client'), id=report_id, client_id=client_id)
