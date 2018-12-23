@@ -3,7 +3,20 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>{% block title %}Media server{% endblock %}</title>
-		{% block head %}{% endblock %}
+		{% block head %}
+		<style>
+			table td {
+				word-break: keep-all;
+				white-space: nowrap;
+			}
+			table, th, td {
+				border: 1px solid black;
+			}
+			table {
+			  border-collapse: collapse;
+			}
+		</style>
+		{% endblock %}
 	</head>
 	<body>
 		<div class="container">

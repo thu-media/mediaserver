@@ -3,12 +3,24 @@
 {% block title %}Client{% endblock %}
 
 {% block head %}
+<style>
+	table td {
+		word-break: keep-all;
+		white-space: nowrap;
+	}
+	table, th, td {
+		border: 1px solid black;
+	}
+	table {
+	  border-collapse: collapse;
+	}
+</style>
 <script src="{% static 'serverlist/Chart.min.js' %}"></script>
 {% endblock %}
 
 {% block content %}
 <h1>Client</h1>
-<table border="1">
+<table>
 	<tbody>
 		<tr>
 			<th>client_id</th>
