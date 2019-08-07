@@ -2,7 +2,12 @@
 {% block title %}Client{% endblock %}
 
 {% block content %}
-<h1>Client</h1>
+<div class="w-100 mobile-scroll">
+
+<h1>Client Reports</h1>
+
+<div class="w-100"></div>
+
 <table border="1">
 	<tbody>
 		<tr>
@@ -23,22 +28,41 @@
 		</tr>
 	<tbody>
 </table>
-<p>Client reports</p>
-<div class="pagination">
-	<span class="step-links">
-		{% if client_reports.has_previous %}
-			<a href="?page=1">&laquo; first</a>
-			<a href="?page={{ client_reports.previous_page_number }}">previous</a>
-		{% endif %}
-		<span class="current">
-			Page {{ client_reports.number }} of {{ client_reports.paginator.num_pages }}.
-		</span>
-		{% if client_reports.has_next %}
-			<a href="?page={{ client_reports.next_page_number }}">next</a>
-			<a href="?page={{ client_reports.paginator.num_pages }}">last &raquo;</a>
-		{% endif %}
-	</span>
 </div>
+
+<div style="height: 30px;"></div>
+
+<div class="w-100 mobile-scroll">
+
+<nav aria-label="Page navigation example">
+<ul class="pagination">
+	{% if client_reports.has_previous %}
+	<li class="page-item">
+		<a class="page-link" href="?page=1">&laquo; first</a>
+	</li>
+	<li class="page-item">
+		<a class="page-link" href="?page={{ client_reports.previous_page_number }}">previous</a>
+	</li>
+	{% endif %}
+	<li class="page-item active" aria-current="page">
+		<a class="page-link" href="#">
+		Page {{ client_reports.number }} of {{ client_reports.paginator.num_pages }}.
+		<span class="sr-only">(current)</span></a>
+	</li>
+	{% if client_reports.has_next %}
+	<li class="page-item">
+		<a class="page-link" href="?page={{ client_reports.next_page_number }}">next</a>
+	</li>
+	<li class="page-item">
+		<a class="page-link" href="?page={{ client_reports.paginator.num_pages }}">last &raquo;</a>
+	</li>
+	{% endif %}
+	</li>
+</ul>
+</nav>
+
+<div class="w-100"></div>
+
 <table border="1">
 	<thead>
 		<tr>
@@ -59,4 +83,5 @@
 		{% endfor %}
 	</tbody>
 </table>
+</div>
 {% endblock %}

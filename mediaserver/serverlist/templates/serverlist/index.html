@@ -3,46 +3,50 @@
 {% block title %}Server list{% endblock %}
 
 {% block content %}
-<h1>Server list</h1>
-<table>
-	<thead>
-		<tr>
-			<th>Client</th>
-			<th>Platform</th>
-			<th>IP</th>
-			<th>CPU</th>
-			<th>平均负载</th>
-			<th>内存</th>
-			<th>磁盘</th>
-			<th>显卡</th>
-			<th>显存</th>
-			<th>GPU-Util</th>
-			<th>在线用户</th>
-			<th>开机时长</th>
-			<th>数据更新</th>
-			<th>更多信息</th>
-			<th>图表</th>
-			<th>详细</th>
-		</tr>
-	</thead>
-	<tbody>
-		{% for tr in table %}
-		<tr>
-			{% for td in tr.tr %}
-			<td>
-				{% if td|islist %}
-					{% for line in td %}
-						{{ line }}<br>
+<div class="container-flex mt-4 mb-5">
+	<h1 class="ml-3 ml-md-4 mb-4">服务器列表</h1>
+	<div class="w-100 mobile-scroll">
+		<table class="table table-sm table-striped table-hover table-bordered ml-2 mr-2">
+			<thead>
+				<tr>
+					<th scope="col" class="align-middle">Client</th>
+					<th scope="col" class="align-middle">Platform</th>
+					<th scope="col" class="align-middle">IP</th>
+					<th scope="col" class="align-middle">CPU</th>
+					<th scope="col" class="align-middle">平均负载</th>
+					<th scope="col" class="align-middle">内存</th>
+					<th scope="col" class="align-middle">磁盘</th>
+					<th scope="col" class="align-middle">显卡</th>
+					<th scope="col" class="align-middle">显存</th>
+					<th scope="col" class="align-middle">GPU-Util</th>
+					<th scope="col" class="align-middle">在线用户</th>
+					<th scope="col" class="align-middle">开机时长</th>
+					<th scope="col" class="align-middle">数据更新</th>
+					<th scope="col" class="align-middle">更多信息</th>
+					<th scope="col" class="align-middle">图表</th>
+					<th scope="col" class="align-middle">详细</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for tr in table %}
+				<tr>
+					{% for td in tr.tr %}
+					<td>
+						{% if td|islist %}
+							{% for line in td %}
+								{{ line }}<br>
+							{% endfor %}
+						{% else %}
+							{{ td }}
+						{% endif %}
+					</td>
 					{% endfor %}
-				{% else %}
-					{{ td }}
-				{% endif %}
-			</td>
-			{% endfor %}
-			<td><a href="{% url 'serverlist:clientchart' tr.client.pk %}">图表</a></td>
-			<td><a href="{% url 'serverlist:client' tr.client.pk %}">详细</a></td>
-		</tr>
-		{% endfor %}
-	<tbody>
-</table>
+					<td><a href="{% url 'serverlist:clientchart' tr.client.pk %}">图表</a></td>
+					<td><a href="{% url 'serverlist:client' tr.client.pk %}">详细</a></td>
+				</tr>
+				{% endfor %}
+			<tbody>
+		</table>
+	</div>
+</div>
 {% endblock %}
