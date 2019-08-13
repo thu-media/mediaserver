@@ -96,15 +96,15 @@ def index(request):
         # tr.append(client.manager)
         tr.append(client.info)
         table.append({'client': client, 'tr': tr})
-    for client in clients_no_report:
-        tr = []
-        tr.append(client.client_id)
-        tr.append('N/A')
-        tr.append('N/A')
-        tr.extend([''] * 9)
-        tr.append('未配置')
-        tr.append(client.info)
-        table.append({'client': client, 'tr': tr})
+    # for client in clients_no_report:
+    #     tr = []
+    #     tr.append(client.client_id)
+    #     tr.append('N/A')
+    #     tr.append('N/A')
+    #     tr.extend([''] * 9)
+    #     tr.append('未配置')
+    #     tr.append(client.info)
+    #     table.append({'client': client, 'tr': tr})
     AccessLog.objects.create(ip=get_ip(request), target='serverlist:index')
     return render(request, 'serverlist/index.html', {'table': table})
 
