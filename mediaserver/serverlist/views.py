@@ -45,21 +45,26 @@ def index(request):
         client = client_report.client
         report = json.loads(client_report.report)
         status = 'ok'
-        if client_report.version != '0.1.1':
+        if client_report.version != '0.1.2':
             status = '监测脚本不匹配'
+            platform = ''
+        elif report['uname'][0] == 'Linux':
+            platform = '{:s} {:s}'.format(report['dist'][0].capitalize(), report['dist'][1])
+        elif report['uname'][0] == 'Windows':
+            platform = 'Windows {:s}'.format(report['uname'][2])
+        else:
+            platform = report['uname'][0]
         tr = []
         tr.append(client.display_name or client.client_id)
-        tr.append(report['platform'])
-        # ips = [client_report.ip]
-        # if settings.ROUTE53_DOMAIN_NAME:
-        #     ips.append(client.client_id.lower() + '.' + settings.ROUTE53_DOMAIN_NAME)
-        tr.append(client_report.ip)
+        tr.append(platform)
+        ips = [client_report.ip]
+        tr.append(ips)
         if status == 'ok':
             tr.append([
-                '{:d} 核 (使用率 {:.0f}%)'.format(report['cpu_count'], report['cpu_percent']),
-                '最高主频 {:.1f}GHz'.format(report['cpu_freq'][2] / 1000),
-            ])
-            tr.append('N/A' if report['loadavg'] is None else '{:.1f}'.format(report['loadavg'][0]))
+                    '{:d} 线程 (使用 {:.0f}%)'.format(report['cpu_count'], report['cpu_percent']),
+                    '最高频率 {:.1f}GHz'.format(report['cpu_freq'][2] / 1000),
+                ])
+            tr.append('N/A' if report['loadavg'] is None else '{:.1f}'.format(report['loadavg'][2]))
             tr.append('{:.1f}G ({:.0f}%)'.format(report['virtual_memory'][0] / 1024 ** 3, report['virtual_memory'][2]))
             disks = list(zip(report['disk_partitions'], report['disk_usage']))
             disks.sort(key=lambda a: (a[0][0], -a[1][0]))
@@ -71,40 +76,33 @@ def index(request):
                         dev['nvmlDeviceGetMemoryInfo']['total'] / 1024**3,
                         dev['nvmlDeviceGetMemoryInfo']['used'] / dev['nvmlDeviceGetMemoryInfo']['total'] * 100,
                     ) for dev in report['nvmlDevices']])
-                tr.append(['{:s}% ({:.0f}W/{:.0f}W) {:d}℃'.format(
+                tr.append(['{:s}% {:.0f}W {:d}℃'.format(
                         '-' if dev['nvmlDeviceGetUtilizationRates']['gpu'] is None else '{:d}'.format(dev['nvmlDeviceGetUtilizationRates']['gpu']),
                         dev['nvmlDeviceGetPowerUsage'] / 1000,
-                        dev['nvmlDeviceGetPowerManagementLimit'] / 1000,
                         dev['nvmlDeviceGetTemperature'],
-                        # dev['nvmlDeviceGetTemperatureThreshold']['slowdown'],
                     ) for dev in report['nvmlDevices']])
             else:
-                # tr.append('NVML failed')
-                # tr.append('N/A')
-                # tr.append('N/A')
                 tr.extend(['N/A'] * 3)
             users = [user[0] for user in report['users']]
             users = sorted(list(set(users)))
-            if len(users) > 3:
-                users = users[:2] + ['...']
+            if len(users) > 4:
+                users = users[:3] + ['...']
             tr.append(users)
             tr.append('{:.0f} 天'.format((now - report['boot_time']) / 86400, 0))
-            tr.append('{:d} 分钟前'.format(math.ceil((now - client_report.created_at.timestamp()) / 60)))
+            dt = now - client_report.created_at.timestamp()
+            if dt >= 86400:
+                tr.append([
+                    '{:.0f} 分钟前'.format(dt / 60),
+                    '({:.1f} 天前)'.format(dt / 86400),
+                ])
+            else:
+                tr.append('{:.0f} 分钟前'.format(dt / 60))
         else:
             tr += [''] * 9
             tr.append(status)
-        # tr.append(client.manager)
+        tr.append(client.manager)
         tr.append(client.info)
         table.append({'client': client, 'tr': tr})
-    # for client in clients_no_report:
-    #     tr = []
-    #     tr.append(client.client_id)
-    #     tr.append('N/A')
-    #     tr.append('N/A')
-    #     tr.extend([''] * 9)
-    #     tr.append('未配置')
-    #     tr.append(client.info)
-    #     table.append({'client': client, 'tr': tr})
     AccessLog.objects.create(ip=get_ip(request), target='serverlist:index')
     return render(request, 'serverlist/index.html', {'table': table})
 

@@ -2,11 +2,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import distro
 import json
 import os
+import platform
 import psutil
 import pynvml
-import sys
+import time
 
 from pprint import pprint
 
@@ -71,8 +73,11 @@ def gputask():
 def alltasks(ensure_json=True):
     assert psutil._PY3
     res = dict(
-        version='0.1.1',
-        platform=sys.platform,
+        version='0.1.2',
+        platform=platform.platform(),
+        uname=platform.uname(),
+        dist=distro.linux_distribution(),
+        now=time.time(),
         boot_time=psutil.boot_time(),
         loadavg=hasattr(os, 'getloadavg') and os.getloadavg() or None,
         cpu_count=psutil.cpu_count(),
@@ -95,7 +100,6 @@ def alltasks(ensure_json=True):
     if ensure_json:
         res = json.loads(json.dumps(res))
     return res
-
 
 if __name__ == '__main__':
     pprint(alltasks(ensure_json=False))

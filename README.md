@@ -33,4 +33,4 @@ cp settings.py.sample settings.py
 
 Update crontab, for example:
 
-> 0,15,30,45 * * * * python3 some-path/client-side/report.py
+> */15 * * * * python3 some-path/client-side/report.py
