@@ -73,14 +73,15 @@ def gputask():
 def alltasks(ensure_json=True):
     assert psutil._PY3
     res = dict(
-        version='0.1.2',
+        version='0.1.2.1',
         platform=platform.platform(),
         uname=platform.uname(),
         dist=distro.linux_distribution(),
         now=time.time(),
         boot_time=psutil.boot_time(),
         loadavg=hasattr(os, 'getloadavg') and os.getloadavg() or None,
-        cpu_count=psutil.cpu_count(),
+        cpu_count_physical=psutil.cpu_count(logical=False),
+        cpu_count_logical=psutil.cpu_count(logical=True),
         cpu_freq=psutil.cpu_freq(),
         cpu_percent=psutil.cpu_percent(),
         cpu_stats=psutil.cpu_stats(),

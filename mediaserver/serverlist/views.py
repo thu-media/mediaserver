@@ -45,7 +45,7 @@ def index(request):
         client = client_report.client
         report = json.loads(client_report.report)
         status = 'ok'
-        if client_report.version != '0.1.2':
+        if client_report.version != '0.1.2.1':
             status = '监测脚本不匹配'
             platform = ''
         elif report['uname'][0] == 'Linux':
@@ -61,7 +61,8 @@ def index(request):
         tr.append(ips)
         if status == 'ok':
             tr.append([
-                    '{:d} 线程 (使用 {:.0f}%)'.format(report['cpu_count'], report['cpu_percent']),
+                    '{:d}核{:d}线程'.format(report['cpu_count_physical'], report['cpu_count_logical']),
+                    '(使用 {:.0f}%)'.format(report['cpu_percent']),
                     '最高频率 {:.1f}GHz'.format(report['cpu_freq'][2] / 1000),
                 ])
             tr.append('N/A' if report['loadavg'] is None else '{:.1f}'.format(report['loadavg'][2]))
