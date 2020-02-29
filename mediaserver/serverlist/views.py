@@ -1,8 +1,6 @@
 import base64
 import functools
 import json
-import math
-import os
 import pprint
 import requests
 import time
@@ -12,12 +10,11 @@ from datetime import datetime, timedelta
 from .models import AccessLog, Client, ClientReport, UnknownReport
 from django.conf import settings
 from django.contrib import auth
-from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import models, transaction
-from django.http import Http404, HttpResponseBadRequest, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -38,7 +35,7 @@ def get_ip(request):
 def index(request):
     client_reports = ClientReport.objects.values('client_id').annotate(id=models.Max('id'))
     clients_no_report = Client.objects.exclude(id__in=[c['client_id'] for c in client_reports]).order_by('client_id')
-    client_reports = ClientReport.objects.filter(id__in=[c['id'] for c in client_reports]).select_related('client').order_by('client__client_id')
+    client_reports = ClientReport.objects.filter(id__in=[c['id'] for c in client_reports]).select_related('client').order_by('client_id')
     now = time.time()
     table = []
     for client_report in client_reports:
@@ -101,7 +98,7 @@ def index(request):
         else:
             tr += [''] * 9
             tr.append(status)
-        tr.append(client.manager)
+        # tr.append(client.manager)
         tr.append(client.info)
         table.append({'client': client, 'tr': tr})
     AccessLog.objects.create(ip=get_ip(request), target='serverlist:index')
@@ -151,7 +148,7 @@ def recvreport(request):
         report = json.loads(report)
         version = report.get('version')
         assert isinstance(version, type(u''))
-    except:
+    except Exception:
         return HttpResponseBadRequest()
     ip = get_ip(request)
     client = Client.objects.filter(client_id=client_id, client_secret=client_secret).first()
