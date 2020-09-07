@@ -1,8 +1,7 @@
 import clienttask
 import settings
 import json
-
-from six.moves import urllib
+import urllib.request
 
 if __name__ == '__main__':
     url = settings.DST_URL

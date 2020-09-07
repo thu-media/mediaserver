@@ -5,6 +5,7 @@ import pprint
 import requests
 import time
 import uuid
+import urllib
 
 from datetime import datetime, timedelta
 from .models import AccessLog, Client, ClientReport, UnknownReport
@@ -19,7 +20,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from six.moves import urllib
 
 # Create your views here.
 
